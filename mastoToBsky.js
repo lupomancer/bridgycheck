@@ -3,11 +3,14 @@ const csv = require('csv-parser');
 const { write } = require('fast-csv');
 const axios = require('axios');
 const { promisify } = require('util');
+
 const sleep = promisify(setTimeout);
 
 // Function to convert the account address format
 function convertAddressFormat(address) {
-  const [username, instance] = address.split('@');
+  // Replace underscores and tildes with dashes
+  const formattedAddress = address.replace(/[_~]/g, '-');
+  const [username, instance] = formattedAddress.split('@');
   return `${username}.${instance}.ap.brid.gy`;
 }
 
@@ -16,26 +19,42 @@ function excludeDomain(address) {
   return address.endsWith('@bsky.brid.gy') || address.endsWith('@threads.net') || address.endsWith('@bird.makeup');
 }
 
-// Function to handle rate limiting
-async function handleRateLimit(retryAfter, accountAddress) {
-  if (isNaN(retryAfter)) {
-    console.log('Invalid retryAfter value. Exiting and writing results to output.csv.');
-    writeResultsToFile();
-    process.exit(0); // Exit the process
-  } else {
-    console.log(`Being rate limited. Waiting for ${retryAfter} seconds before retrying.`);
-    await sleep(retryAfter * 1000); // Convert seconds to milliseconds
-    return checkAccountExists(accountAddress); // Retry the check
-  }
+// Queue to manage API requests
+const apiRequestQueue = [];
+
+// Timer to regulate the rate of API requests
+let apiRequestTimer = null;
+
+// Function to add an API request to the queue
+function enqueueApiRequest(request) {
+  apiRequestQueue.push(request);
+  processApiRequestQueue();
 }
 
-// Function to introduce a delay
-async function delay(duration) {
-  return new Promise(resolve => setTimeout(resolve, duration));
+// Function to process the API request queue
+function processApiRequestQueue() {
+  if (!apiRequestTimer && apiRequestQueue.length > 0) {
+    const request = apiRequestQueue.shift();
+    request().then(() => {
+      // Schedule the next API request if the queue is not empty
+      if (apiRequestQueue.length > 0) {
+        apiRequestTimer = setTimeout(() => {
+          apiRequestTimer = null;
+          processApiRequestQueue();
+        }, 100); // 100 milliseconds delay between requests (10 requests per second)
+      }
+    });
+  }
 }
 
 // Function to check if a Bluesky account exists
 async function checkAccountExists(accountAddress) {
+  // Generate a random delay between 0 and 500 milliseconds
+  const randomDelay = Math.floor(Math.random() * 501);
+
+  // Delay execution by the random amount
+  await sleep(randomDelay);
+
   const formattedAddress = accountAddress.replace('@', ''); // Remove the @ sign
   const profileUrl = `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${formattedAddress}`;
   console.log(`Checking: ${profileUrl}`);
@@ -46,9 +65,14 @@ async function checkAccountExists(accountAddress) {
     console.log(`Account ${formattedAddress} exists: ${accountExists}`);
     return accountExists;
   } catch (error) {
-    if (error.response && error.response.status === 429) {
-      // If a 429 rate limit error is received, log it and retry after 100ms
-      console.log(`Rate limit hit for account ${formattedAddress}, retrying after 100ms...`);
+    if (error.code === 'ECONNRESET') {
+      // If a connection reset error occurs, retry after a delay
+      console.log(`Connection reset for account ${formattedAddress}, retrying after a delay...`);
+      await sleep(1000); // Wait for 1 second before retrying
+      return checkAccountExists(accountAddress); // Retry the check
+    } else if (error.response && error.response.status === 429) {
+      // If a 429 rate limit error is received, retry after a delay
+      console.log(`Rate limit hit for account ${formattedAddress}, retrying after a delay...`);
       await sleep(100); // Wait for 100ms before retrying
       return checkAccountExists(accountAddress); // Retry the check
     } else if (error.response && error.response.status === 400) {
@@ -67,7 +91,6 @@ const inputFilename = process.argv[2];
 const checkFlag = process.argv.includes('-c');
 const outputFilename = 'output.csv';
 const results = [];
-const checkPromises = [];
 
 // Read the input CSV
 fs.createReadStream(inputFilename)
@@ -77,8 +100,8 @@ fs.createReadStream(inputFilename)
     const profileUrl = `https://bsky.app/profile/${newAddress.replace('@', '')}`;
     if (!excludeDomain(row['Account address'])) {
       if (checkFlag) {
-        // If -c flag is provided, check if the account exists
-        checkPromises.push(
+        // If -c flag is provided, enqueue the account existence check
+        enqueueApiRequest(() =>
           checkAccountExists(newAddress).then(exists => {
             if (exists) {
               results.push({ 'Account address': newAddress, 'Profile URL': profileUrl });
@@ -92,12 +115,7 @@ fs.createReadStream(inputFilename)
     }
   })
   .on('end', () => {
-    if (checkFlag) {
-      // Wait for all the account checks to complete if -c flag is provided
-      Promise.all(checkPromises).then(() => {
-        writeResultsToFile();
-      });
-    } else {
+    if (!checkFlag) {
       // Immediately write the results to a file if -c flag is not provided
       writeResultsToFile();
     }
