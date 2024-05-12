@@ -1,6 +1,6 @@
 const fs = require('fs');
 const csv = require('csv-parser');
-const createCsvWriter = require('fast-csv').write;
+const { write } = require('fast-csv');
 
 // Function to convert the account address format
 function convertAddressFormat(address) {
@@ -35,7 +35,7 @@ fs.createReadStream(inputFilename)
   .on('end', () => {
     // Write the results to a new CSV
     const ws = fs.createWriteStream(outputFilename);
-    createCsvWriter(ws, { headers: true })
-      .writeRecords(results)
-      .then(() => console.log(`Conversion complete. The updated addresses are saved in '${outputFilename}'.`));
+    write(results, { headers: true })
+      .pipe(ws)
+      .on('finish', () => console.log(`Conversion complete. The updated addresses are saved in '${outputFilename}'.`));
   });
