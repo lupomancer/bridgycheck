@@ -1,0 +1,13 @@
+{
+  "name": "bluesky-username-checker",
+  "version": "1.0.0",
+  "description": "A script to check Bluesky usernames from a CSV file",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "csv-parser": "^3.0.0",
+    "fast-csv": "^4.3.6"
+  }
+}
