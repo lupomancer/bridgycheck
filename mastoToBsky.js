@@ -13,31 +13,51 @@ function convertAddressFormat(address) {
 
 // Function to check if the domain should be excluded
 function excludeDomain(address) {
-  return address.endsWith('@bsky.brid.gy') || address.endsWith('@threads.net');
+  return address.endsWith('@bsky.brid.gy') || address.endsWith('@threads.net') || address.endsWith('@bird.makeup');
 }
 
 // Function to handle rate limiting
 async function handleRateLimit(retryAfter, accountAddress) {
-  console.log(`Being rate limited. Waiting for ${retryAfter} seconds before retrying.`);
-  await sleep(retryAfter * 1000); // Convert seconds to milliseconds
-  return checkAccountExists(accountAddress); // Retry the check
+  if (isNaN(retryAfter)) {
+    console.log('Invalid retryAfter value. Exiting and writing results to output.csv.');
+    writeResultsToFile();
+    process.exit(0); // Exit the process
+  } else {
+    console.log(`Being rate limited. Waiting for ${retryAfter} seconds before retrying.`);
+    await sleep(retryAfter * 1000); // Convert seconds to milliseconds
+    return checkAccountExists(accountAddress); // Retry the check
+  }
+}
+
+// Function to introduce a delay
+async function delay(duration) {
+  return new Promise(resolve => setTimeout(resolve, duration));
 }
 
 // Function to check if a Bluesky account exists
 async function checkAccountExists(accountAddress) {
   const formattedAddress = accountAddress.replace('@', ''); // Remove the @ sign
-  const profileUrl = `https://bsky.app/profile/${formattedAddress}`;
+  const profileUrl = `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${formattedAddress}`;
   console.log(`Checking: ${profileUrl}`);
   try {
     const response = await axios.get(profileUrl);
-    console.log(`Account ${formattedAddress} exists: ${response.status === 200}`);
-    return response.status === 200;
+    // If the response status is 200, the account exists
+    const accountExists = response.status === 200;
+    console.log(`Account ${formattedAddress} exists: ${accountExists}`);
+    return accountExists;
   } catch (error) {
     if (error.response && error.response.status === 429) {
-      const retryAfter = parseInt(error.response.headers['retry-after']);
-      return handleRateLimit(retryAfter, accountAddress);
+      // If a 429 rate limit error is received, log it and retry after 100ms
+      console.log(`Rate limit hit for account ${formattedAddress}, retrying after 100ms...`);
+      await sleep(100); // Wait for 100ms before retrying
+      return checkAccountExists(accountAddress); // Retry the check
+    } else if (error.response && error.response.status === 400) {
+      // If the response status is 400, the account does not exist
+      console.log(`Account ${formattedAddress} does not exist.`);
+      return false;
     }
-    console.log(`Account ${formattedAddress} does not exist or could not be checked.`);
+    // For other errors, log them and consider the account as non-existent for safety
+    console.log(`Error checking account ${formattedAddress}: ${error.message}`);
     return false;
   }
 }
@@ -84,9 +104,10 @@ fs.createReadStream(inputFilename)
   });
 
 function writeResultsToFile() {
-  // Write the results to a new CSV
   const ws = fs.createWriteStream(outputFilename);
   write(results, { headers: true })
     .pipe(ws)
-    .on('finish', () => console.log(`Conversion complete. The updated addresses are saved in '${outputFilename}'.`));
+    .on('finish', () => {
+      console.log(`Conversion complete. The updated addresses are saved in '${outputFilename}'.`);
+    });
 }
