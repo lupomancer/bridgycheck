@@ -1,12 +1,15 @@
 {
-  "name": "bluesky-username-checker",
+  "name": "bluesky-username-converter",
   "version": "1.0.0",
-  "description": "A script to check Bluesky usernames from a CSV file",
-  "main": "index.js",
+  "description": "Converts Mastodon usernames to Bluesky format and checks for existence using AT Protocol API.",
+  "main": "masto-to-bsky.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node masto-to-bsky.js"
   },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
+    "axios": "^0.27.2",
     "csv-parser": "^3.0.0",
     "fast-csv": "^4.3.6"
   }
