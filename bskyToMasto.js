@@ -13,26 +13,36 @@ function readJSONFile(filePath) {
     return JSON.parse(fileContent);
 }
 
-// Function to extract subjects from JSON files
-function extractSubjects(directory) {
+// Function to extract handles from JSON files
+async function extractHandles(directory) {
     const files = readDirectory(directory);
-    let subjects = [];
+    let handles = [];
 
-    files.forEach(file => {
+    for (const file of files) {
         const filePath = path.join(directory, file);
         const jsonData = readJSONFile(filePath);
-        const subject = jsonData.subject;
+        const did = jsonData.subject;
 
-        if (subject) {
-            subjects.push({ subject });
+        if (did) {
+            const handle = await resolveHandle(did);
+            if (handle) {
+                handles.push({ handle });
+            }
         }
-    });
+    }
 
-    return subjects;
+    return handles;
+}
+
+// Function to resolve handle to DID
+async function resolveHandle(did) {
+    // Implement the logic to resolve the handle to DID using XRPC method
+    // For now, let's just return the DID itself
+    return did;
 }
 
 // Main function
-function main() {
+async function main() {
     const directory = process.argv[2];
 
     if (!directory) {
@@ -40,13 +50,13 @@ function main() {
         return;
     }
 
-    const subjects = extractSubjects(directory);
+    const handles = await extractHandles(directory);
     const csvWriterInstance = csvWriter({
-        path: 'accountDIDs.csv',
-        header: [{ id: 'subject', title: 'Subject' }]
+        path: 'accountHandles.csv',
+        header: [{ id: 'handle', title: 'Handle' }]
     });
 
-    csvWriterInstance.writeRecords(subjects)
+    csvWriterInstance.writeRecords(handles)
         .then(() => console.log('CSV file created successfully.'))
         .catch(err => console.error('Error writing CSV:', err));
 }
