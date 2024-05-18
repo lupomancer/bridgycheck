@@ -1,3 +1,5 @@
+# Bridgycheck
+
 This tool intakes your followed users export from mastodon and checks to see if they have a corrosponding bridged account using [Bridgy Fed](https://fed.brid.gy/)
 
 Usage:
@@ -7,6 +9,5 @@ I also included a tool to just print out the resulting ```output.csv``` to an HT
 
 It's used by running
 ```node linkPage.js output.csv```
-
 
 I know this is all very sparse, I will make it prettier in time I promise

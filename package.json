@@ -9,13 +9,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@ipld/car": "^5.3.0",
+    "@ipld/dag-json": "^10.2.0",
     "async": "^3.2.5",
     "async-await-queue": "^2.1.4",
     "axios": "^0.27.2",
     "cheerio": "^1.0.0-rc.12",
     "create-html": "^4.1.0",
     "csv-parser": "^3.0.0",
+    "csv-writer": "^1.6.0",
     "fast-csv": "^4.3.6",
+    "ipfs-car": "^1.2.0",
     "p-queue": "^8.0.1"
   }
 }
