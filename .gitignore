@@ -2,3 +2,5 @@ output.html
 output.csv
 package-lock.json
 node_modules
+accountHandles.csv
+accountDIDs.csv
