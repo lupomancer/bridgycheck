@@ -71,6 +71,7 @@ function delay(ms) {
 }
 
 // Function to get Mastodon instance based on index
+// TODO: fix the need for this instance array. This will require either waiting for rate limit or getting around it
 function getMastodonInstance(index) {
     switch (index) {
         case 0: return 'mastodon.social';
