@@ -16,6 +16,7 @@ function readJSONFile(filePath) {
 }
 
 // Function to extract handles from JSON files
+// TODO: integrate atproto export https://github.com/rdp-studio/atproto-export/tree/main code to forgo need for end user running this themselves
 async function extractHandles(directory, instance) {
     const files = readDirectory(directory);
     let handles = [];
