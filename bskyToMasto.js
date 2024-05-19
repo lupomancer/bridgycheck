@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const csvWriter = require('csv-writer').createObjectCsvWriter;
 const axios = require('axios');
+const readlineSync = require('readline-sync');
 
 // Function to read all files in a directory
 function readDirectory(directory) {
@@ -15,7 +16,7 @@ function readJSONFile(filePath) {
 }
 
 // Function to extract handles from JSON files
-async function extractHandles(directory) {
+async function extractHandles(directory, instance) {
     const files = readDirectory(directory);
     let handles = [];
 
@@ -26,7 +27,7 @@ async function extractHandles(directory) {
 
         if (did) {
             process.stdout.write(`Fetching handle ${i + 1}/${files.length}...`);
-            const handle = await resolveHandleWithDelay(did);
+            const handle = await resolveHandleWithDelay(did, instance);
             if (handle) {
                 handles.push({ handle });
             }
@@ -38,15 +39,15 @@ async function extractHandles(directory) {
 }
 
 // Function to resolve handle to DID with delay between batches
-async function resolveHandleWithDelay(did) {
+async function resolveHandleWithDelay(did, instance) {
     try {
-        const response = await axios.get(`https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${did}`);
-        if (response.data && response.data.handle) {
-            return response.data.handle;
+        const response = await axios.get(`https://${instance}/api/v2/search?q=${did}@bsky.brid.gy`);
+        if (response.status === 200) {
+            return did;
         }
         return null;
     } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error('Error fetching handle:', error.message);
         return null;
     } finally {
         // Introduce a delay of 100 milliseconds after each request
@@ -62,13 +63,14 @@ function delay(ms) {
 // Main function
 async function main() {
     const directory = process.argv[2];
+    const instance = readlineSync.question('Enter your Mastodon instance (e.g., example.com): ');
 
     if (!directory) {
         console.error('Please provide the directory path as an argument.');
         return;
     }
 
-    const handles = await extractHandles(directory);
+    const handles = await extractHandles(directory, instance);
     const csvWriterInstance = csvWriter({
         path: 'AccountHandles.csv',
         header: [{ id: 'handle', title: 'Handle' }]

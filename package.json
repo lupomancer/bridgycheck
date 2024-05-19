@@ -15,7 +15,9 @@
     "cheerio": "^1.0.0-rc.12",
     "create-html": "^4.1.0",
     "csv-parser": "^3.0.0",
+    "csv-writer": "^1.6.0",
     "fast-csv": "^4.3.6",
-    "p-queue": "^8.0.1"
+    "p-queue": "^8.0.1",
+    "readline-sync": "^1.4.10"
   }
 }
