@@ -82,6 +82,13 @@ function getMastodonInstance(index) {
     }
 }
 
+// Function to write BlueSky handles to a file
+function writeHandlesToFile(handles) {
+    const filePath = 'BlueSkyHandles.txt';
+    fs.writeFileSync(filePath, handles.join('\n'), 'utf8');
+    console.log(`BlueSky handles written to ${filePath}`);
+}
+
 // Main function
 async function main() {
     const directory = process.argv[2];
@@ -96,6 +103,10 @@ async function main() {
     }
 
     const handles = await extractHandles(directory, instance);
+
+    // Write BlueSky handles to file
+    writeHandlesToFile(handles);
+
     const mastodonHandles = [];
 
     for (const handle of handles) {
