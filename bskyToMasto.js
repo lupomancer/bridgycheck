@@ -109,8 +109,9 @@ async function main() {
 
     const mastodonHandles = [];
 
-    for (const handle of handles) {
-        process.stdout.write(`Checking Mastodon account for handle ${handle}...`);
+    for (let i = 0; i < handles.length; i++) {
+        const handle = handles[i];
+        process.stdout.write(`Checking Mastodon account for handle ${i + 1}/${handles.length} (${handle})...`);
         const mastodonExists = await checkMastodonAccount(handle, instance);
         if (mastodonExists) {
             mastodonHandles.push({
@@ -120,9 +121,7 @@ async function main() {
         }
         process.stdout.write('\r'); // Clear loading text
 
-        handlesChecked++;
-
-        if (handlesChecked % 299 === 0 && handlesChecked !== handles.length) {
+        if ((i + 1) % 299 === 0 && i + 1 !== handles.length) {
             instanceIndex++;
             instance = getMastodonInstance(instanceIndex);
             console.log(`Switching Mastodon instance to ${instance}...`);
