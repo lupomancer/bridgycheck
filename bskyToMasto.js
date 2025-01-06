@@ -130,7 +130,7 @@ async function main() {
     const checkMode = process.argv.includes('-c');
     const existingCsvPath = checkMode && process.argv[process.argv.indexOf('-c') + 1] ? process.argv[process.argv.indexOf('-c') + 1] : null;
     const useExistingHandles = process.argv.includes('-e');
-    const mastodonInstanceInput = readlineSync.question('Enter your Mastodon instance (e.g., example.com, leave blank for cycling): ');
+    const mastodonInstanceInput = readlineSync.question('Enter your Mastodon instance e.g. "furries.club" (this will be used to create links on the export file): ');
     const outputInstance = mastodonInstanceInput; // Store the user-entered instance for output
 
     if (!useExistingHandles && process.argv.length < 3) {
