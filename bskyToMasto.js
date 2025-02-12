@@ -77,11 +77,6 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function getMastodonInstance(index) {
-    const instances = ['mastodon.social', 'mastodon.cloud', 'mas.to'];
-    return instances[index % instances.length]; // Use modulo for looping
-}
-
 // Function to write BlueSky handles to a file
 function writeHandlesToFile(handles) {
     const filePath = 'BlueSkyHandles.txt';
@@ -130,7 +125,7 @@ async function main() {
     const checkMode = process.argv.includes('-c');
     const existingCsvPath = checkMode && process.argv[process.argv.indexOf('-c') + 1] ? process.argv[process.argv.indexOf('-c') + 1] : null;
     const useExistingHandles = process.argv.includes('-e');
-    const mastodonInstanceInput = readlineSync.question('Enter your Mastodon instance e.g. "furries.club" (this will be used to create links on the export file): ');
+    const mastodonInstanceInput = readlineSync.question('Enter your Mastodon instance (e.g., furries.club): ');
     const outputInstance = mastodonInstanceInput; // Store the user-entered instance for output
 
     if (!useExistingHandles && process.argv.length < 3) {
@@ -161,14 +156,14 @@ async function main() {
         }
     } else {
         const directory = process.argv[2];
-        handles = await extractHandles(directory, getMastodonInstance(0), numEntries);
+        handles = await extractHandles(directory, mastodonInstanceInput, numEntries);
         writeHandlesToFile(handles);
     }
 
     let existingHandles = [];
     if (checkMode && existingCsvPath) {
         existingHandles = readExistingCSV(existingCsvPath);
-        console.log("Existing Handles Length: " + existingHandles.length);
+        // console.log("Existing Handles (Length: " + existingHandles.length + "):", existingHandles);
     }
 
     // Filter out handles that already exist in the CSV file
@@ -192,7 +187,7 @@ async function main() {
             checkCount = 0;
         }
 
-        const mastodonCheckResult = await checkMastodonAccount(handle, getMastodonInstance(instanceIndex)); // Pass the instance
+        const mastodonCheckResult = await checkMastodonAccount(handle, mastodonInstanceInput); // Pass the user-input instance
         const mastodonExists = mastodonCheckResult.exists;
         const mastodonInstanceChecked = mastodonCheckResult.instance;
 
